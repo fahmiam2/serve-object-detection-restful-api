@@ -1,4 +1,9 @@
-from enum import Enum
+from pathlib import Path
+import sys
+
+root_directory = Path(__file__).resolve().parents[2]
+sys.path.append(str(root_directory))
+
 from ultralytics import YOLO
 import cv2
 import platform
@@ -8,8 +13,8 @@ import torch
 from typing import List, Tuple, Dict, Union
 
 class YoloV8ImageObjectDetection:
-    DETECTION_PATH = "yolov8s.pt"
-    SEGMENTATION_PATH = "yolov8s-seg.pt"
+    DETECTION_PATH = "./model/yolov8s/yolov8s.pt"
+    SEGMENTATION_PATH = "./model/yolov8s/yolov8s-seg.pt"
 
     def __init__(self, chunked: bytes = None, task_type: str = "detection"):
         self._bytes = chunked
