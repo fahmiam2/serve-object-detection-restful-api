@@ -12,7 +12,7 @@ import numpy as np
 from fastapi.responses import JSONResponse
 import base64
 
-async def perform_object_detection(request_data: ImageDetectionRequest) -> ImageDetectionResponse:
+async def perform_object_detection(request_data: ImageDetectionRequest) -> JSONResponse:
     validate_object_detection_request(request_data)
     
     yolo_model = YoloV8ImageObjectDetection(chunked=request_data.image, task_type=request_data.task_type)
@@ -28,4 +28,4 @@ async def perform_object_detection(request_data: ImageDetectionRequest) -> Image
         "object_counts": object_counts
     }
 
-    return JSONResponse(content=response_data)
+    return JSONResponse(content=response_data, status_code=200)
