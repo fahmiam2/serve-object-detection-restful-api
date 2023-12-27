@@ -1,0 +1,161 @@
+openapi: '3.0.2'
+info:
+  title: Object Detection API
+  version: '1.0'
+servers:
+  - url: http://localhost:8000
+paths:
+  /detect/image:
+    post:
+      summary: Detect objects in an image
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                task_type:
+                  type: string
+                  enum: ["detection", "segmentation"]
+                confidence_threshold:
+                  type: number
+                  minimum: 25
+                  maximum: 100
+              required:
+                - image
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  frame:
+                    type: string
+                    format: binary 
+                  object_counts:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                required:
+                  - frame
+                  - object_counts
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                detail: Invalid input. Must provide an image file.
+
+  /detect/video:
+    post:
+      summary: Detect objects in a video
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video:
+                  type: string
+                  format: binary
+                task_type:
+                  type: string
+                  enum: ["detection", "segmentation"]
+                confidence_threshold:
+                  type: number
+                  minimum: 25
+                  maximum: 100
+                annotator:
+                  type: string
+                  enum: ["bounding_box", "box_corner", "color", "circel", "dot", "triangle", "ellipse", "halo", "mask", "polygon"]
+                use_tracer:
+                  type: boolean
+                  enum: [true, false]
+                tracer:
+                  type: string
+                  enum: ["tracer", "heatmap"]
+              required:
+                - video
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                detail: Invalid input. Must provide a video file.
+
+  /detect/webcam:
+    post:
+      summary: Start object detection from webcam using WebSocket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                  enum: ['yolov8s', 'yolov8s-cls', 'yolov8s-seg']
+                confidence:
+                  type: number
+                  minimum: 25
+                  maximum: 100
+              required:
+                - model
+                - confidence
+      responses:
+        '200':
+          description: WebSocket connection established
+          content:
+            application/json:
+              example:
+                detail: WebSocket connection established. Ready for object detection.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                detail: Invalid input.
+
+    get:
+      summary: Receive object detection results through WebSocket
+      responses:
+        '200':
+          description: WebSocket connection established
+          content:
+            application/json:
+              example:
+                detail: 'Object detected: {"labels": ["person", "car"], "timestamp": "2023-01-01T12:00:00"}'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                detail: Invalid request.
+
+    delete:
+      summary: Stop object detection and close WebSocket connection
+      responses:
+        '200':
+          description: WebSocket connection closed
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                detail: Invalid request.
