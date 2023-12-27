@@ -1,3 +1,9 @@
+from pathlib import Path
+import sys
+
+root_directory = Path(__file__).resolve().parents[2]
+sys.path.append(str(root_directory))
+
 from typing import Any
 from ultralytics import YOLO
 import cv2
@@ -12,8 +18,8 @@ trace_annotator = sv.TraceAnnotator()
 
 class YoloV8VideoObjectDetection:
     CONF_THRESHOLD_DEFAULT = 25
-    DETECTION_PATH = "yolov8s.pt"
-    SEGMENTATION_PATH = "yolov8s-seg.pt"
+    DETECTION_PATH = "./model/yolov8s/yolov8s.pt"
+    SEGMENTATION_PATH = "./model/yolov8s/yolov8s-seg.pt"
 
     ANNOTATOR_TYPE_DETECTION = {
         "bounding_box": sv.BoundingBoxAnnotator(),
@@ -139,4 +145,3 @@ class YoloV8VideoObjectDetection:
                 annotated_frame, detections=detections
             )
         return annotated_frame
-    

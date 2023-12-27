@@ -13,10 +13,13 @@ class ImageDetectionResponse(BaseModel):
 
 class VideoDetectionRequest(BaseModel):
     task_type: str
-    confidence_threshold: int = 25
+    confidence_threshold: int
     annotator: str 
-    use_tracer: bool = False
-    tracer: str = ""
+    use_tracer: bool
+    tracer: str 
+
+class VideoDetectionResponse(BaseModel):
+    url_video: str
 
 class WebcamDetectionRequest(BaseModel):
     model: str

@@ -13,7 +13,11 @@ router = APIRouter()
 
 MAX_FILE_SIZE_MB = 10
 
-@router.post("/detect/image", response_model=ImageDetectionResponse, description="Annotated Image")
+@router.post("/detect/image", 
+             response_model=ImageDetectionResponse, 
+             summary="Object Detection in Uploaded Images", 
+             tags=["Image Detection"],
+             description="Performs object detection on an uploaded image and returns annotated image in base64 & list of detected objects.")
 async def detect_objects_in_image(
     image: UploadFile = File(...),
     task_type: str = "detection",
@@ -24,6 +28,9 @@ async def detect_objects_in_image(
 
     if image.file.seek(0, 2) > (MAX_FILE_SIZE_MB * 1024 * 1024):
         raise HTTPException(status_code=413, detail=f"File size exceeds the maximum allowed ({MAX_FILE_SIZE_MB} MB).")
+    
+    # Reset the file position back to the beginning
+    image.file.seek(0)
     
     try:
         contents = await image.read()
