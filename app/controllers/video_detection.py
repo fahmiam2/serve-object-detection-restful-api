@@ -5,9 +5,9 @@ root_directory = Path(__file__).resolve().parents[3]
 sys.path.append(str(root_directory))
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from app.services.video_detection import perform_video_detection
-from app.schemas.detection_schema import VideoDetectionRequest
+from app.schemas.detection_schema import VideoDetectionRequest, VideoDetectionResponse
 from pathlib import Path
 import uuid
 
@@ -21,7 +21,7 @@ def stream_file(video_path):
         for stream_chunk in file_bytes:
             yield stream_chunk
 
-async def save_video_locally(video: UploadFile):
+async def save_video_locally(video: UploadFile) -> tuple[str, str]:
     try:
         allowed_content_types = ["video/mp4", "video/mpeg", "video/quicktime"]
         if video.content_type not in allowed_content_types:
@@ -45,14 +45,18 @@ async def save_video_locally(video: UploadFile):
     except HTTPException as e:
         raise e
 
-@router.post("/detect/video", summary="Serves video with Stream Response", tags=["Video serve"], response_class=StreamingResponse)
+@router.post("/detect/video", 
+             response_model=VideoDetectionResponse,
+             summary="Serves Object Detection in Video", 
+             tags=["Video serve"],
+             description="Performs object detection on an uploaded video and returns url of annotated video ")
 async def detect_objects_in_video(
     video: UploadFile = File(...),
     task_type: str = "detection",
     confidence_threshold: int = 25,
     annotator: str = "bounding_box",
     use_tracer: bool = False,
-    tracer: str = ""
+    tracer: str = "tracer"
 ):
     filename, local_input_video_path = await save_video_locally(video)
 
@@ -66,12 +70,10 @@ async def detect_objects_in_video(
             use_tracer=use_tracer,
             tracer=tracer
         )
-        await perform_video_detection(request_data, source_path=local_input_video_path, target_path=local_annotated_video_path)
-
-        # Get Generated Signed URL of videos from GCS
-
-        # Return JSON response with streaming URL
-        # return JSONResponse(content={"streaming_url": streaming_url}, status_code=200)
+        result = await perform_video_detection(request_data, filename, source_path=local_input_video_path, target_path=local_annotated_video_path)
+        
+        return result
+    
     except FileNotFoundError as file_not_found_error:
         raise HTTPException(status_code=400, detail=f"File not found: {file_not_found_error}")
     except HTTPException as e:
