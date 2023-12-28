@@ -3,6 +3,10 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.controllers.image_detection import router as image_detection_router
 from app.controllers.video_detection import router as video_detection_router
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 app = FastAPI()
 
@@ -12,7 +16,7 @@ middleware = [
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"message": " Hello World"}
 
 """
 if we want to redirect the root into /docs route:

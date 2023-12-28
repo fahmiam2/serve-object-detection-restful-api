@@ -9,10 +9,16 @@ from fastapi.responses import JSONResponse
 from app.services.video_detection import perform_video_detection
 from app.schemas.detection_schema import VideoDetectionRequest, VideoDetectionResponse
 from pathlib import Path
+import logging
+import os
 import uuid
+
+logger = logging.getLogger(__name__)
 
 BASE_INPUT_FOLDER_PATH = "./temp/input_videos/"
 BASE_OUTPUT_FOLDER_PATH = "./temp/output_videos/"
+Path(BASE_INPUT_FOLDER_PATH).mkdir(parents=True, exist_ok=True)
+Path(BASE_OUTPUT_FOLDER_PATH).mkdir(parents=True, exist_ok=True)
 
 router = APIRouter()
 
@@ -23,6 +29,8 @@ def stream_file(video_path):
 
 async def save_video_locally(video: UploadFile) -> tuple[str, str]:
     try:
+        logger.info("Save video in local server")
+
         allowed_content_types = ["video/mp4", "video/mpeg", "video/quicktime"]
         if video.content_type not in allowed_content_types:
             raise HTTPException(status_code=422, detail="Invalid video file type. Supported types: " + ", ".join(allowed_content_types))
@@ -41,9 +49,20 @@ async def save_video_locally(video: UploadFile) -> tuple[str, str]:
         with open(file_input_path, "wb") as video_file:
             video_file.write(video.file.read())
 
+        logger.info("Successfully save video in local server.")
+
         return file_name, file_input_path
     except HTTPException as e:
         raise e
+    
+async def delete_local_files(input_path: str, output_path: str) -> None:
+    try:
+        logger.info(f"Deleting local files: {input_path} and {output_path}")
+        os.remove(input_path)
+        os.remove(output_path)
+        logger.info("Local files deleted successfully")
+    except Exception as e:
+        logger.warning(f"Error deleting local files: {e}")
 
 @router.post("/detect/video", 
              response_model=VideoDetectionResponse,
@@ -58,11 +77,12 @@ async def detect_objects_in_video(
     use_tracer: bool = False,
     tracer: str = "tracer"
 ):
-    filename, local_input_video_path = await save_video_locally(video)
-
-    local_annotated_video_path = BASE_OUTPUT_FOLDER_PATH + filename
-
     try:
+        logger.info("Received request to detect objects in an video.")
+        filename, local_input_video_path = await save_video_locally(video)
+
+        local_annotated_video_path = BASE_OUTPUT_FOLDER_PATH + filename
+
         request_data = VideoDetectionRequest(
             task_type=task_type,
             confidence_threshold=confidence_threshold,
@@ -71,15 +91,19 @@ async def detect_objects_in_video(
             tracer=tracer
         )
         result = await perform_video_detection(request_data, filename, source_path=local_input_video_path, target_path=local_annotated_video_path)
-        
+        await delete_local_files(input_path=local_input_video_path, output_path=local_annotated_video_path)
         return result
     
     except FileNotFoundError as file_not_found_error:
+        logger.error(f"File not found error: {file_not_found_error}")
         raise HTTPException(status_code=400, detail=f"File not found: {file_not_found_error}")
     except HTTPException as e:
         if e.status_code == 422:
+            logger.warning(f"Validation error: {e.detail}")
             return JSONResponse(content={"detail": "Validation error", "errors": e.detail}, status_code=422)
         if e.status_code == 413:
+            logger.warning(f"Validation error: {e.detail}")
             return JSONResponse(content={"detail": "Validation error", "errors": e.detail}, status_code=413)
     except Exception as e:
+        logger.exception(f"Internal server error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
