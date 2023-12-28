@@ -55,7 +55,7 @@ async def save_video_locally(video: UploadFile) -> tuple[str, str]:
     except HTTPException as e:
         raise e
     
-async def delete_local_files(input_path: str, output_path: str) -> None:
+def delete_local_files(input_path: str, output_path: str) -> None:
     try:
         logger.info(f"Deleting local files: {input_path} and {output_path}")
         os.remove(input_path)
@@ -91,7 +91,6 @@ async def detect_objects_in_video(
             tracer=tracer
         )
         result = await perform_video_detection(request_data, filename, source_path=local_input_video_path, target_path=local_annotated_video_path)
-        await delete_local_files(input_path=local_input_video_path, output_path=local_annotated_video_path)
         return result
     
     except FileNotFoundError as file_not_found_error:
@@ -107,3 +106,6 @@ async def detect_objects_in_video(
     except Exception as e:
         logger.exception(f"Internal server error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+    finally:
+        if local_input_video_path and local_annotated_video_path:
+            delete_local_files(input_path=local_input_video_path, output_path=local_annotated_video_path)
