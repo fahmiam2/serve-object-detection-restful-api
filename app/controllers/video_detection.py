@@ -4,16 +4,20 @@ import sys
 root_directory = Path(__file__).resolve().parents[3]
 sys.path.append(str(root_directory))
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
 from app.services.video_detection import perform_video_detection
 from app.schemas.detection_schema import VideoDetectionRequest, VideoDetectionResponse
 from pathlib import Path
+from fastapi import APIRouter, File, UploadFile, HTTPException, Request
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import logging
 import os
 import uuid
 
 logger = logging.getLogger(__name__)
+
+limiter = Limiter(get_remote_address)
 
 BASE_INPUT_FOLDER_PATH = "./temp/input_videos/"
 BASE_OUTPUT_FOLDER_PATH = "./temp/output_videos/"
@@ -69,7 +73,9 @@ def delete_local_files(input_path: str, output_path: str) -> None:
              summary="Serves Object Detection in Video", 
              tags=["Video serve"],
              description="Performs object detection on an uploaded video and returns url of annotated video ")
+@limiter.limit("5/second")
 async def detect_objects_in_video(
+    request: Request,
     video: UploadFile = File(...),
     task_type: str = "detection",
     confidence_threshold: int = 25,

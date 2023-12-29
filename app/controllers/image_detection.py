@@ -4,13 +4,18 @@ import sys
 root_directory = Path(__file__).resolve().parents[3]
 sys.path.append(str(root_directory))
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
 from app.services.image_detection import perform_object_detection
 from app.schemas.detection_schema import ImageDetectionRequest, ImageDetectionResponse
+from fastapi import APIRouter, File, UploadFile, HTTPException, Request
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import logging
 
 logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
@@ -20,11 +25,14 @@ MAX_FILE_SIZE_MB = 10
              response_model=ImageDetectionResponse, 
              summary="Object Detection in Uploaded Images", 
              tags=["Image Detection"],
-             description="Performs object detection on an uploaded image and returns annotated image in base64 & list of detected objects.")
+             description="Performs object detection on an uploaded image and returns annotated image in base64 & list of detected objects.",
+)
+@limiter.limit("50/second")
 async def detect_objects_in_image(
+    request: Request,
     image: UploadFile = File(...),
     task_type: str = "detection",
-    confidence_threshold: int = 25
+    confidence_threshold: int = 25,
 ):
     try:
         logger.info("Received request to detect objects in an image.")
