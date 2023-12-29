@@ -6,11 +6,13 @@ sys.path.append(str(root_directory))
 
 from typing import Any
 from ultralytics import YOLO
-import cv2
+import logging
 import platform
 import numpy as np
 import supervision as sv
 import torch
+
+logger = logging.getLogger(__name__)
 
 tracker = sv.ByteTrack()
 label_annotator = sv.LabelAnnotator()
@@ -82,38 +84,49 @@ class YoloV8VideoObjectDetection:
         Returns:
             model (Model) - Trained Pytorch model
         """
-        model = YOLO(self.PATH)
-        return model
+        try:
+            logger.info(f"Loading YOLO model with task type: {self._task_type}")
+            model = YOLO(self.PATH)
+            return model
+        except Exception as e:
+            logger.exception(f"Error loading YOLO model: {e}")
+            raise e
     
     def callback(self, frame: np.ndarray, _: int, conf_threshold: int = 25, annotator: str = "bounding_box", use_tracer: bool = False, tracer: str = None) -> Any:
-        if annotator not in ["bounding_box", "box_corner", "color", "circel", "dot", "triangle", "ellipse", "halo", "mask", "polygon"]:
-            raise ValueError(f"Invalid annotator type: {annotator}")
+        try:
+            if annotator not in ["bounding_box", "box_corner", "color", "circel", "dot", "triangle", "ellipse", "halo", "mask", "polygon"]:
+                raise ValueError(f"Invalid annotator type: {annotator}")
 
-        results = self.model(frame)[0]
-        detections_sv = sv.Detections.from_ultralytics(results)
-        detections = detections_sv[detections_sv.confidence >= conf_threshold / 100]
+            results = self.model(frame)[0]
+            detections_sv = sv.Detections.from_ultralytics(results)
+            detections = detections_sv[detections_sv.confidence >= conf_threshold / 100]
 
-        # annotating
-        annotated_frame = self._get_annotator_instance(frame, detections, annotator)
+            # annotating
+            annotated_frame = self._get_annotator_instance(frame, detections, annotator)
 
-        # labelling
-        detections = tracker.update_with_detections(detections)
+            # labelling
+            detections = tracker.update_with_detections(detections)
 
-        labels = [
-            f"#{tracker_id} {results.names[class_id]} ({confidence*100:0.2f}%)"
-            for class_id, tracker_id, confidence
-            in zip(detections.class_id, detections.tracker_id, detections.confidence)
-        ]
-        
-        annotated_frame = self._annotate_with_label(annotated_frame, detections, labels)
-        
-        # tracing
-        if use_tracer and tracer is not None:
-            if tracer not in ["tracer", "heatmap"]:
-                raise ValueError(f"Invalid tracer type: {tracer}")
-            annotated_frame = self._annotate_with_tracer(annotated_frame, tracer, detections)
+            labels = [
+                f"#{tracker_id} {results.names[class_id]} ({confidence*100:0.2f}%)"
+                for class_id, tracker_id, confidence
+                in zip(detections.class_id, detections.tracker_id, detections.confidence)
+            ]
             
-        return annotated_frame
+            annotated_frame = self._annotate_with_label(annotated_frame, detections, labels)
+            
+            # tracing
+            if use_tracer and tracer is not None:
+                if tracer not in ["tracer", "heatmap"]:
+                    raise ValueError(f"Invalid tracer type: {tracer}")
+                annotated_frame = self._annotate_with_tracer(annotated_frame, tracer, detections)
+                
+            return annotated_frame
+
+        except Exception as e:
+            logger.exception(f"Error during object detection callback: {e}")
+            raise e
+
     
     def _get_annotator_instance(self, frame, detections, annotator):
         if isinstance(annotator, str):
