@@ -80,7 +80,7 @@ class YoloV8ImageObjectDetection:
     
     def _get_labels_objects(self, detections: object) -> List[str]:
         labels = [
-            f"{self.classes[class_id]}-{confidence:0.2f}"
+            f"{self.classes[class_id]} ({confidence*100:0.2f}%)"
             for confidence, class_id
             in zip(detections.confidence, detections.class_id)
         ]
@@ -111,6 +111,7 @@ class YoloV8ImageObjectDetection:
             else:
                 raise ValueError(f"Unsupported task_type: {self._task_type}")
             
+            # for large image >> text_scale=5, text_padding=60, text_thickness=5
             label_annotator = sv.LabelAnnotator()
 
             annotated_image = label_annotator.annotate(
