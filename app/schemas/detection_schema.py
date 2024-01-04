@@ -1,6 +1,5 @@
-from typing import List, Union
+from typing import List, Optional
 from pydantic import BaseModel
-from io import BytesIO
 
 class ImageDetectionRequest(BaseModel):
     image: bytes
@@ -16,7 +15,7 @@ class VideoDetectionRequest(BaseModel):
     confidence_threshold: int
     annotator: str 
     use_tracer: bool
-    tracer: str 
+    tracer: Optional[str]
 
 class VideoDetectionResponse(BaseModel):
     url_video: str
