@@ -12,8 +12,8 @@ def validate_object_detection_request(request: ImageDetectionRequest):
         raise HTTPException(status_code=422, detail="Invalid input. Must provide an image file.")
     
     task_type = request.task_type
-    if task_type.lower() not in ["detection", "threshold"]:
-        raise HTTPException(status_code=422, detail="Invalid input. Model type must be detection or threshold")
+    if task_type.lower() not in ["detection", "segmentation"]:
+        raise HTTPException(status_code=422, detail="Invalid input. Task type must be detection or segmentation")
     
     confidence_threshold = request.confidence_threshold
     if not (25 <= confidence_threshold <= 100):

@@ -94,7 +94,7 @@ class YoloV8VideoObjectDetection:
     
     def callback(self, frame: np.ndarray, _: int, conf_threshold: int = 25, annotator: str = "bounding_box", use_tracer: bool = False, tracer: str = None) -> Any:
         try:
-            if annotator not in ["bounding_box", "box_corner", "color", "circel", "dot", "triangle", "ellipse", "halo", "mask", "polygon"]:
+            if annotator not in ["bounding_box", "box_corner", "color", "circle", "dot", "triangle", "ellipse", "halo", "mask", "polygon"]:
                 raise ValueError(f"Invalid annotator type: {annotator}")
 
             results = self.model(frame)[0]
