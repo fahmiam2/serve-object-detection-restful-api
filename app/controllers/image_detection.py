@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,17 +27,19 @@ MAX_FILE_SIZE_MB = 15
              tags=["Image Detection"],
              description="Performs object detection on an uploaded image and returns annotated image in base64 & list of detected objects.",
 )
-@limiter.limit("50/second")
+@limiter.limit("25/second")
 async def detect_objects_in_image(
     request: Request,
     image: UploadFile = File(...),
     task_type: str = "detection",
     confidence_threshold: int = 25,
-):
+) -> Optional[JSONResponse]:
+    
     try:
         logger.info("Received request to detect objects in an image.")
 
-        if image.content_type not in ["image/jpg", "image/jpeg", "image/png"]:
+        content_type = image.content_type
+        if content_type not in ["image/jpg", "image/jpeg", "image/png"]:
             raise HTTPException(status_code=415, detail="Invalid image format. Only JPG, JPEG and PNG are supported.")
 
         if image.file.seek(0, 2) > (MAX_FILE_SIZE_MB * 1024 * 1024):
@@ -47,7 +50,7 @@ async def detect_objects_in_image(
 
         contents = await image.read()
         request_data = ImageDetectionRequest(image=contents, task_type=task_type, confidence_threshold=confidence_threshold)
-        result = await perform_object_detection(request_data)
+        result = await perform_object_detection(request_data, content_type=content_type)
 
         return result
 

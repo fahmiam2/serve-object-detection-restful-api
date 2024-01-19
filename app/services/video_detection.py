@@ -7,21 +7,23 @@ sys.path.append(str(root_directory))
 from typing import Any
 from app.schemas.detection_schema import VideoDetectionRequest
 from app.validation.video_detection import validate_video_detection_request
+from app.utils import video as vd
 from model.yolov8s.video_detection_model import YoloV8VideoObjectDetection
 from fastapi.responses import JSONResponse
 from google.auth.transport import requests
 from google.cloud import storage
 from config.settings import GCS_KEY_FILE, GCS_BUCKET_NAME
+import asyncio
 import google.auth
 import logging
-import supervision as sv
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 # Global variable to store the GCS client
 gcs_client = None
 
-def get_gcs_client(credential_path=None):
+def get_gcs_client(credential_path: str = None) -> storage.Client:
     global gcs_client
     if gcs_client is None:
         try:
@@ -34,7 +36,7 @@ def get_gcs_client(credential_path=None):
             raise
     return gcs_client
 
-def upload_to_gcs(bucket_name, source_file_path, object_name, credential_path=None) -> None:
+def upload_to_gcs(bucket_name: str, source_file_path: str, object_name: str, credential_path: str = None) -> None:
     client = get_gcs_client(credential_path)
 
     if client is None:
@@ -46,7 +48,7 @@ def upload_to_gcs(bucket_name, source_file_path, object_name, credential_path=No
 
     return client
 
-def generate_signed_url(bucket_name, object_name, credential_path=None, expiration=3600) -> str:
+def generate_signed_url(bucket_name: str, object_name: str, credential_path: str = None, expiration: int = 3600) -> str:
     
     if credential_path is None:
         credentials, _ = google.auth.default()
@@ -70,29 +72,44 @@ def generate_signed_url(bucket_name, object_name, credential_path=None, expirati
     )
     return url
 
-async def perform_video_detection(request_data: VideoDetectionRequest, filename, source_path, target_path) -> JSONResponse:
+async def process_frame_async(frame: np.ndarray, index: int, 
+                              yolo_model: YoloV8VideoObjectDetection, 
+                              request_data: VideoDetectionRequest, sink: vd.VideoSink) -> None:
+    try:
+        logger.info(f"Processing frame {index}")
+        result_frame = yolo_model.callback(
+            frame,
+            index,
+            conf_threshold=request_data.confidence_threshold,
+            annotator=request_data.annotator,
+            use_tracer=request_data.use_tracer,
+            tracer=request_data.tracer
+        )
+        sink.write_frame(frame=result_frame)
+        logger.info(f"Frame {index} processed successfully")
+    except Exception as e:
+        logger.error(f"Error processing frame {index}: {e}")
+    finally:
+        logger.info(f"Frame {index} processing complete")
+
+async def perform_video_detection(request_data: VideoDetectionRequest, filename: str, 
+                                  source_path: str, target_path: str) -> JSONResponse:
     # Validate the request
     validate_video_detection_request(request_data)
-    
+
     # Create YoloV8VideoObjectDetection instance
     yolo_model = YoloV8VideoObjectDetection(task_type=request_data.task_type)
     
     logger.info("Performing object detection")
-    source_video_info = sv.VideoInfo.from_video_path(video_path=source_path) 
+    source_video_info = vd.VideoInfo.from_video_path(video_path=source_path) 
 
-    with sv.VideoSink(target_path=target_path, video_info=source_video_info, codec="vp09") as sink:
-        for index, frame in enumerate(
-            sv.get_video_frames_generator(source_path=source_path)
-        ):
-            result_frame = yolo_model.callback(
-                frame, 
-                index,
-                conf_threshold=request_data.confidence_threshold,
-                annotator=request_data.annotator,
-                use_tracer=request_data.use_tracer,
-                tracer=request_data.tracer
-            )
-            sink.write_frame(frame=result_frame)
+    async with vd.VideoSink(target_path=target_path, video_info=source_video_info, codec="vp09") as sink:
+        tasks = [process_frame_async(frame, index, yolo_model, request_data, sink)
+                 for index, frame in enumerate(vd.get_video_frames_generator(source_path=source_path))]
+        try:
+            await asyncio.gather(*tasks)
+        except Exception as e:
+            logger.error(f"Error during frame processing: {e}")
 
     logger.info("Object detection successfully completed")
 

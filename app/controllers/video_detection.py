@@ -11,6 +11,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from typing import Optional, Generator, Any
 import logging
 import os
 import uuid
@@ -27,7 +28,7 @@ MAX_VIDEO_SIZE_MB = 15
 
 router = APIRouter()
 
-def stream_file(video_path):
+def stream_file(video_path) -> Generator[bytes, Any, None]:
     with open(video_path, mode="rb") as file_bytes:
         for stream_chunk in file_bytes:
             yield stream_chunk
@@ -73,7 +74,7 @@ def delete_local_files(input_path: str, output_path: str) -> None:
              summary="Serves Object Detection in Video", 
              tags=["Video serve"],
              description="Performs object detection on an uploaded video and returns url of annotated video ")
-@limiter.limit("20/second")
+@limiter.limit("5/second")
 async def detect_objects_in_video(
     request: Request,
     video: UploadFile = File(...),
@@ -82,7 +83,8 @@ async def detect_objects_in_video(
     annotator: str = "bounding_box",
     use_tracer: bool = False,
     tracer: str = None
-):
+) -> Optional[JSONResponse]:
+    
     local_input_video_path = None
     local_annotated_video_path = None
 
