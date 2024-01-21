@@ -27,13 +27,20 @@ class YoloV8VideoObjectDetection:
         "bounding_box": sv.BoundingBoxAnnotator(),
         "box_corner": sv.BoxCornerAnnotator(),
         "color": sv.ColorAnnotator(),
-        "circle": sv.CircleAnnotator(),  # Fixed spelling
+        "circle": sv.CircleAnnotator(),
         "dot": sv.DotAnnotator(),
         "triangle": sv.TriangleAnnotator(),
         "ellipse": sv.EllipseAnnotator(),
     }
 
     ANNOTATOR_TYPE_SEGMENTATION = {
+        "bounding_box": sv.BoundingBoxAnnotator(),
+        "box_corner": sv.BoxCornerAnnotator(),
+        "color": sv.ColorAnnotator(),
+        "circle": sv.CircleAnnotator(),
+        "dot": sv.DotAnnotator(),
+        "triangle": sv.TriangleAnnotator(),
+        "ellipse": sv.EllipseAnnotator(),
         "halo": sv.HaloAnnotator(),
         "mask": sv.MaskAnnotator(),
         "polygon": sv.PolygonAnnotator(),
