@@ -1,0 +1,108 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: SERVICE_NAME
+  namespace: PROJECT_NUMBER
+  labels:
+    cloud.googleapis.com/location: REGION
+  annotations:
+    run.googleapis.com/launch-stage: LAUNCH_STAGE
+    run.googleapis.com/description: DESCRIPTION
+    run.googleapis.com/ingress: INGRESS
+    run.googleapis.com/binary-authorization: POLICY
+    run.googleapis.com/binary-authorization-breakglass: JUSTIFICATION
+spec:
+  template:
+    metadata:
+      name: REVISION_NAME
+      annotations:
+        autoscaling.knative.dev/minScale: MIN_INSTANCES
+        autoscaling.knative.dev/maxScale: MAX_INSTANCES
+        run.googleapis.com/cpu-throttling: CPU_ALLOCATION
+        run.googleapis.com/startup-cpu-boost: CPU_BOOST
+        run.googleapis.com/sessionAffinity: SESSION_AFFINITY
+        run.googleapis.com/cloudsql-instances: CLOUD_SQL_CONNECTION
+        run.googleapis.com/execution-environment: EXECUTION_ENVIRONMENT
+        run.googleapis.com/vpc-access-connector: SERVERLESS_VPC_CONNECTOR
+        run.googleapis.com/vpc-access-egress: EGRESS
+        run.googleapis.com/network-interfaces: VPC_NETWORK_SETTINGS_IN_JSON
+        run.googleapis.com/encryption-key: CMEK
+        run.googleapis.com/custom-audiences: '["AUDIENCE1","AUDIENCE2"]'
+        run.googleapis.com/container-dependencies: CONTAINER_START_ORDER
+    spec:
+      containerConcurrency: MAX_CONCURRENCY
+      timeoutSeconds: REQUEST_TIMEOUT
+      serviceAccountName: SERVICE_ACCOUNT_EMAIL
+      containers:
+      - image: IMAGE
+        name: CONTAINER_NAME
+        command:
+        - COMMAND1
+        - COMMAND2
+        args:
+        - ARGUMENT1
+        - ARGUMENT2
+        ports:
+        - name: HTTP1_OR_H2C
+          containerPort: PORT
+        env:
+        - name: KEY
+          value: VALUE
+        resources:
+          limits:
+            cpu: CPU_LIMIT
+            memory: MEMORY_LIMIT
+        volumeMounts:
+        - name: VOLUME_NAME
+          readOnly: true
+          mountPath: MOUNT_PATH
+        startupProbe:
+          httpGet:
+            path: CHECK_PATH
+            httpHeaders:
+              - name: HEADER_NAME
+                value: HEADER_VALUE
+            port: PORT
+          tcpSocket:
+            port: PORT
+          grpc:
+            service: GRPC_SERVICE
+            port: PORT
+          initialDelaySeconds: DELAY
+          timeoutSeconds: TIMEOUT
+          failureThreshold: THRESHOLD
+          periodSeconds: PERIOD
+        livenessProbe:
+          httpGet:
+            path: CHECK_PATH
+            port: PORT
+            httpHeaders:
+              - name: HEADER_NAME
+                value: HEADER_VALUE
+          grpc:
+            service: GRPC_SERVICE
+            port: PORT
+          initialDelaySeconds: DELAY
+          timeoutSeconds: TIMEOUT
+          failureThreshold: THRESHOLD
+          periodSeconds: PERIOD
+      - image: SIDECAR_IMAGE
+        name: SIDECAR_NAME
+      volumes:
+      - name: VOLUME_NAME
+        secret:
+          secretName: SECRET
+          items:
+          - key: SECRET_VERSION
+            path: PATH
+      - name: VOLUME_NAME
+        emptyDir:
+          sizeLimit: IN_MEMORY_VOLUME_SIZE
+          medium: Memory
+  traffic:
+  - percent: PERCENT_TO_LATEST
+    latestRevision: true
+  - percent: PERCENT_TO_REVISION
+    revisionName: REVISION_NAME
+  - tag: TAG
+    revisionName: REVISION_NAME
