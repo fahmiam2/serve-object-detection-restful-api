@@ -58,7 +58,7 @@ jobs:
           export SERVICE_CLOUD_RUN_NAME="${{ vars.SERVICE_CLOUD_RUN_NAME }}"
           export PROJECT_NUMBER="${{ vars.PROJECT_NUMBER }}"
           export REGION="${{ vars.REGION }}"
-          export CLOUD_RUN_SA="${{ secrets.WIF_SERVICE_ACCOUNT }}"
+          export CLOUD_RUN_SA="${{ secrets.CLOUD_RUN_SA }}"
           export CONTAINER_IMAGE="${{ vars.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REPO }}/${{ vars.SERVICE_NAME }}:${{ github.sha }}"
           export CONTAINER_NAME="${{ vars.CONTAINER_NAME }}"
           export GCS_BUCKET_NAME="${{ vars.GCS_BUCKET_NAME }}"
