@@ -53,4 +53,24 @@ jobs:
           tags: |
             ${{ vars.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REPO }}/${{ vars.SERVICE_NAME }}:${{ github.sha }}
             ${{ vars.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REPO }}/${{ vars.SERVICE_NAME }}:latest
-  
+      - name: Create Service declaration   
+        run: |-
+          export SERVICE_CLOUD_RUN_NAME="${{ vars.SERVICE_CLOUD_RUN_NAME }}"
+          export PROJECT_NUMBER="${{ vars.PROJECT_NUMBER }}"
+          export REGION="${{ vars.REGION }}"
+          export CLOUD_RUN_SA="${{ secrets.WIF_SERVICE_ACCOUNT }}"
+          export CONTAINER_IMAGE="${{ vars.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REPO }}/${{ vars.SERVICE_NAME }}:${{ github.sha }}"
+          export CONTAINER_NAME="${{ vars.CONTAINER_NAME }}"
+          export GCS_BUCKET_NAME="${{ vars.GCS_BUCKET_NAME }}"
+          export PROJECT_ID="${{ vars.GCP_PROJECT_ID }}"
+          envsubst < ./service-yaml/container.yaml > container-prod.yaml
+          cat container-prod.yaml
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          service: ${{ vars.SERVICE_NAME }}
+          region: ${{ vars.REGION }}
+          metadata: container-prod.yaml
+      - name: Show Output
+        run: echo ${{ steps.deploy.outputs.url }}
