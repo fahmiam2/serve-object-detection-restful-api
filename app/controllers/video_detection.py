@@ -71,8 +71,8 @@ def delete_local_files(input_path: str, output_path: str) -> None:
 
 @router.post("/detect/video", 
              response_model=VideoDetectionResponse,
-             summary="Serves Object Detection in Video", 
-             tags=["Video serve"],
+             summary="Object Detection in Uploaded Video", 
+             tags=["Image Detection"],
              description="Performs object detection on an uploaded video and returns url of annotated video ")
 @limiter.limit("5/second")
 async def detect_objects_in_video(

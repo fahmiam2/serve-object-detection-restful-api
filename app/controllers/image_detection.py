@@ -23,7 +23,7 @@ MAX_FILE_SIZE_MB = 15
 
 @router.post("/detect/image", 
              response_model=ImageDetectionResponse, 
-             summary="Object Detection in Uploaded Images", 
+             summary="Object Detection in Uploaded Image", 
              tags=["Image Detection"],
              description="Performs object detection on an uploaded image and returns annotated image in base64 & list of detected objects.",
 )
