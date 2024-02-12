@@ -31,6 +31,7 @@ MAX_FILE_SIZE_MB = 15
 async def detect_objects_in_image(
     request: Request,
     image: UploadFile = File(...),
+    model_type: str = "yolov8s",
     task_type: str = "detection",
     confidence_threshold: int = 25,
 ) -> Optional[JSONResponse]:
@@ -49,7 +50,7 @@ async def detect_objects_in_image(
         image.file.seek(0)
 
         contents = await image.read()
-        request_data = ImageDetectionRequest(image=contents, task_type=task_type, confidence_threshold=confidence_threshold)
+        request_data = ImageDetectionRequest(image=contents, model_type=model_type, task_type=task_type, confidence_threshold=confidence_threshold)
         result = await perform_object_detection(request_data, content_type=content_type)
 
         return result

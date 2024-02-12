@@ -11,6 +11,10 @@ def validate_object_detection_request(request: ImageDetectionRequest):
     if not request.image:
         raise HTTPException(status_code=422, detail="Invalid input. Must provide an image file.")
     
+    model_type = request.model_type
+    if model_type.lower() not in ["yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x"]:
+        raise HTTPException(status_code=422, detail="Invalid input. Model type must be yolov8n, yolov8s, yolov8m, yolov8l, yolov8x")
+    
     task_type = request.task_type
     if task_type.lower() not in ["detection", "segmentation"]:
         raise HTTPException(status_code=422, detail="Invalid input. Task type must be detection or segmentation")

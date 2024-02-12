@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class ImageDetectionRequest(BaseModel):
     image: bytes
+    model_type: str
     task_type: str
     confidence_threshold: int
 
