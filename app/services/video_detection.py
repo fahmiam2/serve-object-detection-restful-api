@@ -8,7 +8,7 @@ from typing import Any
 from app.schemas.detection_schema import VideoDetectionRequest
 from app.validation.video_detection import validate_video_detection_request
 from app.utils import video as vd
-from model.yolov8s.video_detection_model import YoloV8VideoObjectDetection
+from model.video_detection_model import YoloV8VideoObjectDetection
 from fastapi.responses import JSONResponse
 from google.auth.transport import requests
 from google.cloud import storage
@@ -114,8 +114,9 @@ async def perform_video_detection(request_data: VideoDetectionRequest, filename:
     logger.info("Object detection successfully completed")
 
     logger.info(f"Uploading {filename} to GCS")
+    
     # Additional logic to upload annotated frames to GCS
-    gcs_object_name = f"{filename}"  # Adjust the naming as needed
+    gcs_object_name = f"{filename}" 
     client = upload_to_gcs(bucket_name=GCS_BUCKET_NAME, source_file_path=target_path, object_name=gcs_object_name, credential_path=GCS_KEY_FILE)
     logger.info(f"Successfully uploading {filename} to gcs")
     logger.info(f"here is the client: {client}")
