@@ -4,7 +4,7 @@ import sys
 root_directory = Path(__file__).resolve().parents[1]
 sys.path.append(str(root_directory))
 
-from model.yolov8s.image_detection_model import YoloV8ImageObjectDetection
+from model.image_detection_model import YoloV8ImageObjectDetection
 import asyncio
 import cv2
 import numpy as np
@@ -16,7 +16,7 @@ def yolo_detector():
     image_path = './static/images/photo1699780157.jpeg' 
     with open(image_path, 'rb') as image_file:
         sample_image_bytes = image_file.read()
-    return YoloV8ImageObjectDetection(chunked=sample_image_bytes, task_type="detection")
+    return YoloV8ImageObjectDetection(chunked=sample_image_bytes, model_type="yolov8s", task_type="detection")
 
 def test_device_detection(yolo_detector):
     device = yolo_detector._get_device()
