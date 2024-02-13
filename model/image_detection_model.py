@@ -5,13 +5,15 @@ root_directory = Path(__file__).resolve().parents[1]
 sys.path.append(str(root_directory))
 
 from ultralytics import YOLO
+from typing import List, Tuple, Dict, Union
 import cv2
 import logging
 import platform
 import numpy as np
 import supervision as sv
 import torch
-from typing import List, Tuple, Dict, Union
+import os
+import urllib.request
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +60,41 @@ class YoloV8ImageObjectDetection:
 
     def _load_model(self) -> YOLO:
         try:
-            logger.info(f"Loading YOLO model with task type: {self._task_type}")
+            logger.info(f"Loading {self._model_type} model with task type: {self._task_type}")
+            if not os.path.exists(self.PATH):
+                # Download the model if it doesn't exist
+                self._download_model()
             model = YOLO(self.PATH)
             return model
         except Exception as e:
             logger.exception(f"Error loading YOLO model: {e}")
             raise e
+    
+    def _download_model(self) -> None:
+        # Define download URLs for different model types and tasks
+        download_urls = {
+            "detection": {
+                "yolov8m": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8m.pt",
+                "yolov8l": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8l.pt",
+                "yolov8x": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8x.pt"
+            },
+            "segmentation": {
+                "yolov8m": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8m-seg.pt",
+                "yolov8l": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8l-seg.pt",
+                "yolov8x": "https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8x-seg.pt"
+            }
+        }
+
+        if self._model_type in download_urls.get(self._task_type, {}):
+            download_url = download_urls[self._task_type][self._model_type]
+            # Extract filename from download URL
+            filename = os.path.basename(download_url)
+            logger.info(f"Downloading {self._model_type} model from: {download_url}")
+            # Download the model file
+            urllib.request.urlretrieve(download_url, self.PATH)
+            logger.info(f"Model downloaded to: {self.PATH}")
+        else:
+            logger.warning(f"Model for task_type: {self._task_type} and model_type: {self._model_type} is not available for download.")
     
     async def __call__(self, conf_threshold: int = 25) -> Tuple[np.ndarray, Dict[str, int]]:
         try:
